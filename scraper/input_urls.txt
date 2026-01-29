@@ -1,0 +1,10 @@
+# Sample input URLs for the Social Media Stats Scraper
+# Add your TikTok and Instagram video URLs below (one per line)
+# Lines starting with # are ignored
+
+# TikTok examples:
+# https://www.tiktok.com/@username/video/1234567890123456789
+
+# Instagram examples:
+# https://www.instagram.com/reel/ABC123xyz/
+# https://www.instagram.com/p/XYZ789abc/
