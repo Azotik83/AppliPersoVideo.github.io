@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Calendar, Settings, Plus } from 'lucide-react';
+import { Home, Calendar, BarChart3, Settings } from 'lucide-react';
 
 function MobileNav() {
     return (
@@ -18,6 +18,13 @@ function MobileNav() {
             >
                 <Calendar />
                 <span>Calendar</span>
+            </NavLink>
+            <NavLink
+                to="/statistics"
+                className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}
+            >
+                <BarChart3 />
+                <span>Stats</span>
             </NavLink>
             <NavLink
                 to="/settings"

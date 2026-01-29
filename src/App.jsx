@@ -5,6 +5,7 @@ import MobileNav from './components/Layout/MobileNav';
 import Dashboard from './pages/Dashboard';
 import ProjectDetail from './pages/ProjectDetail';
 import Calendar from './pages/Calendar';
+import Statistics from './pages/Statistics';
 import Settings from './pages/Settings';
 import { getAllProjects, addProject, updateProject, deleteProject } from './utils/db';
 
@@ -41,6 +42,14 @@ function App() {
 
   const handleUpdateProject = async (id, updates) => {
     try {
+      // If status is being changed to 'published', set publishedAt
+      if (updates.status === 'published') {
+        const project = projects.find(p => p.id === id);
+        if (project && project.status !== 'published') {
+          updates.publishedAt = new Date().toISOString();
+        }
+      }
+
       const updated = await updateProject(id, updates);
       setProjects(prev => prev.map(p => p.id === id ? updated : p));
       return updated;
@@ -91,6 +100,7 @@ function App() {
             }
           />
           <Route path="/calendar" element={<Calendar projects={projects} />} />
+          <Route path="/statistics" element={<Statistics projects={projects} />} />
           <Route
             path="/settings"
             element={<Settings onRefresh={refreshProjects} />}

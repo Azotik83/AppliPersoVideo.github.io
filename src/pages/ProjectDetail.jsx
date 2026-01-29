@@ -2,10 +2,18 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, FileText, Film, Video, Music,
-    Trash2, Check, Calendar as CalendarIcon
+    Trash2, Check, Calendar as CalendarIcon, ExternalLink,
+    Youtube, Instagram, Twitter, Link as LinkIcon
 } from 'lucide-react';
 import MediaPlayer from '../components/MediaPlayer/MediaPlayer';
 import { getProject } from '../utils/db';
+
+// TikTok icon (not in lucide)
+const TikTokIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+    </svg>
+);
 
 const TABS = [
     { id: 'script', label: 'Script', icon: FileText },
@@ -18,6 +26,14 @@ const STATUS_OPTIONS = [
     { value: 'draft', label: 'Draft' },
     { value: 'in_progress', label: 'In Progress' },
     { value: 'published', label: 'Published' },
+];
+
+const SOCIAL_PLATFORMS = [
+    { key: 'youtube', label: 'YouTube', icon: Youtube, placeholder: 'https://youtube.com/watch?v=...' },
+    { key: 'tiktok', label: 'TikTok', icon: TikTokIcon, placeholder: 'https://tiktok.com/@user/video/...' },
+    { key: 'instagram', label: 'Instagram', icon: Instagram, placeholder: 'https://instagram.com/reel/...' },
+    { key: 'twitter', label: 'X / Twitter', icon: Twitter, placeholder: 'https://x.com/user/status/...' },
+    { key: 'other', label: 'Other', icon: LinkIcon, placeholder: 'https://...' },
 ];
 
 function ProjectDetail({ onUpdate, onDelete }) {
@@ -36,6 +52,10 @@ function ProjectDetail({ onUpdate, onDelete }) {
         try {
             const data = await getProject(id);
             if (data) {
+                // Ensure socialLinks exists for older projects
+                if (!data.socialLinks) {
+                    data.socialLinks = { youtube: '', tiktok: '', instagram: '', twitter: '', other: '' };
+                }
                 setProject(data);
             } else {
                 navigate('/');
@@ -88,6 +108,15 @@ function ProjectDetail({ onUpdate, onDelete }) {
 
     const handleRemoveAudioFile = (index) => {
         handleUpdate({ audioFiles: project.audioFiles.filter((_, i) => i !== index) });
+    };
+
+    const handleSocialLinkChange = (platform, value) => {
+        handleUpdate({
+            socialLinks: {
+                ...project.socialLinks,
+                [platform]: value
+            }
+        });
     };
 
     const formatDate = (dateString) => {
@@ -225,6 +254,62 @@ function ProjectDetail({ onUpdate, onDelete }) {
                         </select>
                     </div>
 
+                    {/* Social Links */}
+                    <div className="sidebar-section">
+                        <h3 className="sidebar-section-title">Video Links</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                            {SOCIAL_PLATFORMS.map(platform => {
+                                const Icon = platform.icon;
+                                const hasLink = project.socialLinks?.[platform.key];
+                                return (
+                                    <div key={platform.key}>
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 'var(--space-xs)',
+                                            marginBottom: 'var(--space-xs)'
+                                        }}>
+                                            <Icon style={{
+                                                width: 16,
+                                                height: 16,
+                                                color: hasLink ? 'var(--color-primary)' : 'var(--color-text-muted)'
+                                            }} />
+                                            <span style={{
+                                                fontSize: 'var(--font-size-xs)',
+                                                color: 'var(--color-text-secondary)'
+                                            }}>
+                                                {platform.label}
+                                            </span>
+                                            {hasLink && (
+                                                <a
+                                                    href={project.socialLinks[platform.key]}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{ marginLeft: 'auto' }}
+                                                    title="Open link"
+                                                >
+                                                    <ExternalLink style={{
+                                                        width: 14,
+                                                        height: 14,
+                                                        color: 'var(--color-primary)'
+                                                    }} />
+                                                </a>
+                                            )}
+                                        </div>
+                                        <input
+                                            type="url"
+                                            className="form-input"
+                                            placeholder={platform.placeholder}
+                                            value={project.socialLinks?.[platform.key] || ''}
+                                            onChange={(e) => handleSocialLinkChange(platform.key, e.target.value)}
+                                            style={{ fontSize: 'var(--font-size-xs)' }}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     {/* Project Details */}
                     <div className="sidebar-section">
                         <h3 className="sidebar-section-title">Details</h3>
@@ -236,6 +321,12 @@ function ProjectDetail({ onUpdate, onDelete }) {
                             <span className="meta-label">Updated</span>
                             <span>{formatDate(project.updatedAt)}</span>
                         </div>
+                        {project.publishedAt && (
+                            <div className="meta-item">
+                                <span className="meta-label">Published</span>
+                                <span>{formatDate(project.publishedAt)}</span>
+                            </div>
+                        )}
                         <div className="meta-item">
                             <span className="meta-label">Videos</span>
                             <span>{project.videoFiles.length}</span>

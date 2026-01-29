@@ -31,6 +31,7 @@ export function createDefaultProject(overrides = {}) {
         status: 'draft',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        publishedAt: null, // Date when status changed to 'published'
         scheduledDate: null,
         tags: [],
         thumbnail: null,
@@ -38,6 +39,13 @@ export function createDefaultProject(overrides = {}) {
         scenario: '',
         videoFiles: [],
         audioFiles: [],
+        socialLinks: {
+            youtube: '',
+            tiktok: '',
+            instagram: '',
+            twitter: '',
+            other: '',
+        },
         checklist: [
             { id: generateId(), text: 'Write script', completed: false },
             { id: generateId(), text: 'Create storyboard', completed: false },

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Calendar, Settings, Play } from 'lucide-react';
+import { Home, Calendar, BarChart3, Settings, Play } from 'lucide-react';
 
 function Sidebar() {
     return (
@@ -25,6 +25,13 @@ function Sidebar() {
                 >
                     <Calendar />
                     <span>Calendar</span>
+                </NavLink>
+                <NavLink
+                    to="/statistics"
+                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                >
+                    <BarChart3 />
+                    <span>Statistics</span>
                 </NavLink>
                 <NavLink
                     to="/settings"
