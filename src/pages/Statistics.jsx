@@ -1,18 +1,28 @@
 import { useState, useMemo } from 'react';
 import {
     BarChart3, Calendar, Flame, TrendingUp, Video, CheckCircle2,
-    ChevronLeft, ChevronRight, ExternalLink
+    ChevronLeft, ChevronRight, ExternalLink, Eye, Heart, MessageCircle
 } from 'lucide-react';
 
 function Statistics({ projects }) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
+    // Format large numbers
+    const formatNumber = (num) => {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    };
+
     // Calculate statistics
     const stats = useMemo(() => {
         const now = new Date();
+        const thisMonth = now.getMonth();
+        const thisYear = now.getFullYear();
+
         const publishedProjects = projects.filter(p => p.status === 'published');
 
-        // Get publication dates (use publishedAt if available, otherwise updatedAt for published projects)
+        // Get publication dates
         const publicationDates = publishedProjects.map(p => {
             const date = p.publishedAt || p.updatedAt;
             return new Date(date).toISOString().split('T')[0];
@@ -23,14 +33,12 @@ function Statistics({ projects }) {
 
         // Calculate streak
         let currentStreak = 0;
-        let maxStreak = 0;
         let tempStreak = 0;
 
         const sortedDays = uniqueDays.sort().reverse();
         const today = now.toISOString().split('T')[0];
         const yesterday = new Date(now.setDate(now.getDate() - 1)).toISOString().split('T')[0];
 
-        // Check if published today or yesterday to start streak
         if (sortedDays.includes(today) || sortedDays.includes(yesterday)) {
             for (let i = 0; i < 365; i++) {
                 const checkDate = new Date();
@@ -39,7 +47,6 @@ function Statistics({ projects }) {
 
                 if (sortedDays.includes(dateStr)) {
                     tempStreak++;
-                    maxStreak = Math.max(maxStreak, tempStreak);
                 } else if (tempStreak > 0) {
                     break;
                 }
@@ -48,12 +55,20 @@ function Statistics({ projects }) {
         }
 
         // This month's publications
-        const thisMonth = new Date().getMonth();
-        const thisYear = new Date().getFullYear();
-        const thisMonthPublications = publishedProjects.filter(p => {
+        const thisMonthProjects = publishedProjects.filter(p => {
             const date = new Date(p.publishedAt || p.updatedAt);
             return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
-        }).length;
+        });
+
+        // Total stats (all time)
+        const totalViews = projects.reduce((sum, p) => sum + (p.stats?.views || 0), 0);
+        const totalLikes = projects.reduce((sum, p) => sum + (p.stats?.likes || 0), 0);
+        const totalComments = projects.reduce((sum, p) => sum + (p.stats?.comments || 0), 0);
+
+        // This month stats
+        const monthlyViews = thisMonthProjects.reduce((sum, p) => sum + (p.stats?.views || 0), 0);
+        const monthlyLikes = thisMonthProjects.reduce((sum, p) => sum + (p.stats?.likes || 0), 0);
+        const monthlyComments = thisMonthProjects.reduce((sum, p) => sum + (p.stats?.comments || 0), 0);
 
         return {
             total: projects.length,
@@ -61,9 +76,14 @@ function Statistics({ projects }) {
             inProgress: projects.filter(p => p.status === 'in-progress').length,
             draft: projects.filter(p => p.status === 'draft').length,
             currentStreak,
-            maxStreak,
-            thisMonthPublications,
+            thisMonthPublications: thisMonthProjects.length,
             publicationDates: new Set(publicationDates),
+            totalViews,
+            totalLikes,
+            totalComments,
+            monthlyViews,
+            monthlyLikes,
+            monthlyComments,
         };
     }, [projects]);
 
@@ -78,19 +98,16 @@ function Statistics({ projects }) {
 
         const days = [];
 
-        // Previous month padding
         for (let i = startPadding - 1; i >= 0; i--) {
             const date = new Date(year, month, -i);
             days.push({ date, isCurrentMonth: false });
         }
 
-        // Current month days
         for (let i = 1; i <= lastDay.getDate(); i++) {
             const date = new Date(year, month, i);
             days.push({ date, isCurrentMonth: true });
         }
 
-        // Next month padding
         const remaining = 42 - days.length;
         for (let i = 1; i <= remaining; i++) {
             const date = new Date(year, month + 1, i);
@@ -138,14 +155,13 @@ function Statistics({ projects }) {
             </header>
 
             <div className="page-container" style={{ paddingTop: 0 }}>
-                {/* Stats Cards */}
+                {/* Project Stats Cards */}
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                     gap: 'var(--space-md)',
-                    marginBottom: 'var(--space-xl)'
+                    marginBottom: 'var(--space-lg)'
                 }}>
-                    {/* Total Projects */}
                     <div className="card" style={{ padding: 'var(--space-lg)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                             <div style={{
@@ -157,13 +173,12 @@ function Statistics({ projects }) {
                                 <Video style={{ color: 'var(--color-primary)', width: 24, height: 24 }} />
                             </div>
                             <div>
-                                <div style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 700 }}>{stats.total}</div>
-                                <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>Total Projects</div>
+                                <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>{stats.total}</div>
+                                <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>Total Projects</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Published */}
                     <div className="card" style={{ padding: 'var(--space-lg)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                             <div style={{
@@ -175,13 +190,12 @@ function Statistics({ projects }) {
                                 <CheckCircle2 style={{ color: 'var(--color-success)', width: 24, height: 24 }} />
                             </div>
                             <div>
-                                <div style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 700 }}>{stats.published}</div>
-                                <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>Published</div>
+                                <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>{stats.published}</div>
+                                <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>Published</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Current Streak */}
                     <div className="card" style={{ padding: 'var(--space-lg)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                             <div style={{
@@ -193,16 +207,15 @@ function Statistics({ projects }) {
                                 <Flame style={{ color: '#ef4444', width: 24, height: 24 }} />
                             </div>
                             <div>
-                                <div style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 700 }}>
+                                <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>
                                     {stats.currentStreak}
-                                    <span style={{ fontSize: 'var(--font-size-lg)', color: 'var(--color-text-muted)' }}> days</span>
+                                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}> days</span>
                                 </div>
-                                <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>Current Streak</div>
+                                <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>Current Streak</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* This Month */}
                     <div className="card" style={{ padding: 'var(--space-lg)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                             <div style={{
@@ -214,8 +227,114 @@ function Statistics({ projects }) {
                                 <TrendingUp style={{ color: 'var(--color-primary)', width: 24, height: 24 }} />
                             </div>
                             <div>
-                                <div style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 700 }}>{stats.thisMonthPublications}</div>
-                                <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>This Month</div>
+                                <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>{stats.thisMonthPublications}</div>
+                                <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>This Month</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Total Stats Section */}
+                <div style={{ marginBottom: 'var(--space-xl)' }}>
+                    <h2 style={{
+                        fontSize: 'var(--font-size-lg)',
+                        fontWeight: 600,
+                        marginBottom: 'var(--space-md)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--space-sm)'
+                    }}>
+                        📊 Performance Overview
+                    </h2>
+
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                        gap: 'var(--space-md)'
+                    }}>
+                        {/* All Time Stats */}
+                        <div className="card" style={{ padding: 'var(--space-lg)' }}>
+                            <h3 style={{
+                                fontSize: 'var(--font-size-sm)',
+                                fontWeight: 600,
+                                color: 'var(--color-text-muted)',
+                                marginBottom: 'var(--space-md)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                            }}>
+                                All Time
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                        <Eye style={{ width: 20, height: 20, color: 'var(--color-primary)' }} />
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>Views</span>
+                                    </div>
+                                    <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700 }}>
+                                        {formatNumber(stats.totalViews)}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                        <Heart style={{ width: 20, height: 20, color: '#ef4444' }} />
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>Likes</span>
+                                    </div>
+                                    <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700 }}>
+                                        {formatNumber(stats.totalLikes)}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                        <MessageCircle style={{ width: 20, height: 20, color: '#3b82f6' }} />
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>Comments</span>
+                                    </div>
+                                    <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700 }}>
+                                        {formatNumber(stats.totalComments)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* This Month Stats */}
+                        <div className="card" style={{ padding: 'var(--space-lg)' }}>
+                            <h3 style={{
+                                fontSize: 'var(--font-size-sm)',
+                                fontWeight: 600,
+                                color: 'var(--color-primary)',
+                                marginBottom: 'var(--space-md)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                            }}>
+                                This Month
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                        <Eye style={{ width: 20, height: 20, color: 'var(--color-primary)' }} />
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>Views</span>
+                                    </div>
+                                    <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, color: 'var(--color-primary)' }}>
+                                        {formatNumber(stats.monthlyViews)}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                        <Heart style={{ width: 20, height: 20, color: '#ef4444' }} />
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>Likes</span>
+                                    </div>
+                                    <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, color: 'var(--color-primary)' }}>
+                                        {formatNumber(stats.monthlyLikes)}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                        <MessageCircle style={{ width: 20, height: 20, color: '#3b82f6' }} />
+                                        <span style={{ color: 'var(--color-text-secondary)' }}>Comments</span>
+                                    </div>
+                                    <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, color: 'var(--color-primary)' }}>
+                                        {formatNumber(stats.monthlyComments)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -258,7 +377,6 @@ function Statistics({ projects }) {
                             </div>
                         </div>
 
-                        {/* Day Headers */}
                         <div style={{
                             display: 'grid',
                             gridTemplateColumns: 'repeat(7, 1fr)',
@@ -278,7 +396,6 @@ function Statistics({ projects }) {
                             ))}
                         </div>
 
-                        {/* Calendar Grid */}
                         <div style={{
                             display: 'grid',
                             gridTemplateColumns: 'repeat(7, 1fr)',
@@ -322,7 +439,6 @@ function Statistics({ projects }) {
                             })}
                         </div>
 
-                        {/* Legend */}
                         <div style={{
                             display: 'flex',
                             gap: 'var(--space-lg)',
@@ -364,7 +480,7 @@ function Statistics({ projects }) {
                             gap: 'var(--space-sm)'
                         }}>
                             <BarChart3 style={{ color: 'var(--color-primary)' }} />
-                            Recent Videos
+                            Top Videos
                         </h2>
 
                         {recentPublished.length === 0 ? (
@@ -396,12 +512,27 @@ function Statistics({ projects }) {
                                         }}>
                                             {project.title}
                                         </div>
+
+                                        {/* Stats */}
                                         <div style={{
+                                            display: 'flex',
+                                            gap: 'var(--space-md)',
+                                            marginBottom: 'var(--space-sm)',
                                             fontSize: 'var(--font-size-xs)',
-                                            color: 'var(--color-text-muted)',
-                                            marginBottom: 'var(--space-sm)'
+                                            color: 'var(--color-text-muted)'
                                         }}>
-                                            {new Date(project.publishedAt || project.updatedAt).toLocaleDateString()}
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <Eye style={{ width: 12, height: 12 }} />
+                                                {formatNumber(project.stats?.views || 0)}
+                                            </span>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <Heart style={{ width: 12, height: 12 }} />
+                                                {formatNumber(project.stats?.likes || 0)}
+                                            </span>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <MessageCircle style={{ width: 12, height: 12 }} />
+                                                {formatNumber(project.stats?.comments || 0)}
+                                            </span>
                                         </div>
 
                                         {/* Social Links */}

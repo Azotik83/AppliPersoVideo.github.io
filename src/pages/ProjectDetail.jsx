@@ -310,7 +310,78 @@ function ProjectDetail({ onUpdate, onDelete }) {
                         </div>
                     </div>
 
-                    {/* Project Details */}
+                    {/* Video Stats */}
+                    <div className="sidebar-section">
+                        <h3 className="sidebar-section-title">Video Stats</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+                            <div>
+                                <label style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--space-xs)',
+                                    fontSize: 'var(--font-size-xs)',
+                                    color: 'var(--color-text-secondary)',
+                                    marginBottom: 'var(--space-xs)'
+                                }}>
+                                    👁️ Views
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="form-input"
+                                    placeholder="0"
+                                    value={project.stats?.views || 0}
+                                    onChange={(e) => handleUpdate({
+                                        stats: { ...project.stats, views: parseInt(e.target.value) || 0 }
+                                    })}
+                                />
+                            </div>
+                            <div>
+                                <label style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--space-xs)',
+                                    fontSize: 'var(--font-size-xs)',
+                                    color: 'var(--color-text-secondary)',
+                                    marginBottom: 'var(--space-xs)'
+                                }}>
+                                    ❤️ Likes
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="form-input"
+                                    placeholder="0"
+                                    value={project.stats?.likes || 0}
+                                    onChange={(e) => handleUpdate({
+                                        stats: { ...project.stats, likes: parseInt(e.target.value) || 0 }
+                                    })}
+                                />
+                            </div>
+                            <div>
+                                <label style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--space-xs)',
+                                    fontSize: 'var(--font-size-xs)',
+                                    color: 'var(--color-text-secondary)',
+                                    marginBottom: 'var(--space-xs)'
+                                }}>
+                                    💬 Comments
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="form-input"
+                                    placeholder="0"
+                                    value={project.stats?.comments || 0}
+                                    onChange={(e) => handleUpdate({
+                                        stats: { ...project.stats, comments: parseInt(e.target.value) || 0 }
+                                    })}
+                                />
+                            </div>
+                        </div>
+                    </div>
                     <div className="sidebar-section">
                         <h3 className="sidebar-section-title">Details</h3>
                         <div className="meta-item">

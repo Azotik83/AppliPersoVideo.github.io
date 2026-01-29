@@ -46,6 +46,11 @@ export function createDefaultProject(overrides = {}) {
             twitter: '',
             other: '',
         },
+        stats: {
+            views: 0,
+            likes: 0,
+            comments: 0,
+        },
         checklist: [
             { id: generateId(), text: 'Write script', completed: false },
             { id: generateId(), text: 'Create storyboard', completed: false },
