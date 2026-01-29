@@ -1,11 +1,22 @@
 import { useState, useMemo } from 'react';
 import {
     BarChart3, Calendar, Flame, TrendingUp, Video, CheckCircle2,
-    ChevronLeft, ChevronRight, ExternalLink, Eye, Heart, MessageCircle
+    ChevronLeft, ChevronRight, ExternalLink, Eye, Heart, MessageCircle,
+    RefreshCw, Loader2, AlertCircle
 } from 'lucide-react';
+import { scrapeUrls, getSocialUrls, isApiAvailable } from '../utils/scraperApi';
 
-function Statistics({ projects }) {
+function Statistics({ projects, onUpdateProject }) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [isFetching, setIsFetching] = useState(false);
+    const [fetchProgress, setFetchProgress] = useState({ current: 0, total: 0 });
+    const [fetchError, setFetchError] = useState(null);
+    const [apiAvailable, setApiAvailable] = useState(null);
+
+    // Check API availability on mount
+    useState(() => {
+        isApiAvailable().then(setApiAvailable);
+    }, []);
 
     // Format large numbers
     const formatNumber = (num) => {
@@ -77,6 +88,7 @@ function Statistics({ projects }) {
             draft: projects.filter(p => p.status === 'draft').length,
             currentStreak,
             thisMonthPublications: thisMonthProjects.length,
+            thisMonthProjects,
             publicationDates: new Set(publicationDates),
             totalViews,
             totalLikes,
@@ -86,6 +98,58 @@ function Statistics({ projects }) {
             monthlyComments,
         };
     }, [projects]);
+
+    // Fetch stats for all this month's projects
+    const handleFetchAllStats = async () => {
+        if (!onUpdateProject) {
+            setFetchError('Update function not available');
+            return;
+        }
+
+        const projectsWithLinks = stats.thisMonthProjects.filter(p => {
+            const urls = getSocialUrls(p.socialLinks);
+            return urls.length > 0;
+        });
+
+        if (projectsWithLinks.length === 0) {
+            setFetchError('No projects with TikTok/Instagram links this month');
+            return;
+        }
+
+        setIsFetching(true);
+        setFetchError(null);
+        setFetchProgress({ current: 0, total: projectsWithLinks.length });
+
+        try {
+            for (let i = 0; i < projectsWithLinks.length; i++) {
+                const project = projectsWithLinks[i];
+                const urls = getSocialUrls(project.socialLinks);
+
+                setFetchProgress({ current: i + 1, total: projectsWithLinks.length });
+
+                const result = await scrapeUrls(urls);
+
+                if (result.success && result.summary) {
+                    await onUpdateProject(project.id, {
+                        stats: {
+                            views: result.summary.total_views,
+                            likes: result.summary.total_likes,
+                            comments: result.summary.total_comments,
+                        }
+                    });
+                }
+
+                // Small delay between projects
+                if (i < projectsWithLinks.length - 1) {
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            }
+        } catch (error) {
+            setFetchError(error.message);
+        } finally {
+            setIsFetching(false);
+        }
+    };
 
     // Generate calendar days
     const calendarDays = useMemo(() => {
@@ -234,18 +298,87 @@ function Statistics({ projects }) {
                     </div>
                 </div>
 
-                {/* Total Stats Section */}
+                {/* Performance Overview with Fetch Button */}
                 <div style={{ marginBottom: 'var(--space-xl)' }}>
-                    <h2 style={{
-                        fontSize: 'var(--font-size-lg)',
-                        fontWeight: 600,
-                        marginBottom: 'var(--space-md)',
+                    <div style={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: 'var(--space-md)',
+                        flexWrap: 'wrap',
                         gap: 'var(--space-sm)'
                     }}>
-                        📊 Performance Overview
-                    </h2>
+                        <h2 style={{
+                            fontSize: 'var(--font-size-lg)',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--space-sm)'
+                        }}>
+                            📊 Performance Overview
+                        </h2>
+
+                        {/* Fetch All Stats Button */}
+                        <button
+                            className="btn btn-primary"
+                            onClick={handleFetchAllStats}
+                            disabled={isFetching}
+                            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}
+                        >
+                            {isFetching ? (
+                                <>
+                                    <Loader2 className="animate-spin" style={{ width: 16, height: 16 }} />
+                                    Fetching ({fetchProgress.current}/{fetchProgress.total})...
+                                </>
+                            ) : (
+                                <>
+                                    <RefreshCw style={{ width: 16, height: 16 }} />
+                                    Fetch All Stats
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                    {fetchError && (
+                        <div style={{
+                            padding: 'var(--space-md)',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            borderRadius: 'var(--radius-md)',
+                            color: '#ef4444',
+                            fontSize: 'var(--font-size-sm)',
+                            marginBottom: 'var(--space-md)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--space-sm)'
+                        }}>
+                            <AlertCircle style={{ width: 16, height: 16 }} />
+                            {fetchError}
+                        </div>
+                    )}
+
+                    {apiAvailable === false && (
+                        <div style={{
+                            padding: 'var(--space-md)',
+                            background: 'rgba(249, 115, 22, 0.1)',
+                            border: '1px solid rgba(249, 115, 22, 0.3)',
+                            borderRadius: 'var(--radius-md)',
+                            color: 'var(--color-primary)',
+                            fontSize: 'var(--font-size-sm)',
+                            marginBottom: 'var(--space-md)'
+                        }}>
+                            💡 <strong>Tip:</strong> Start the scraper API to fetch stats automatically:
+                            <code style={{
+                                display: 'block',
+                                marginTop: 'var(--space-xs)',
+                                padding: 'var(--space-xs)',
+                                background: 'rgba(0,0,0,0.2)',
+                                borderRadius: 'var(--radius-sm)'
+                            }}>
+                                cd scraper && python api.py
+                            </code>
+                        </div>
+                    )}
 
                     <div style={{
                         display: 'grid',

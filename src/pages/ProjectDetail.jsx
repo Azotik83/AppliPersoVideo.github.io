@@ -3,10 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, FileText, Film, Video, Music,
     Trash2, Check, Calendar as CalendarIcon, ExternalLink,
-    Youtube, Instagram, Twitter, Link as LinkIcon
+    Youtube, Instagram, Twitter, Link as LinkIcon, RefreshCw, Loader2
 } from 'lucide-react';
 import MediaPlayer from '../components/MediaPlayer/MediaPlayer';
 import { getProject } from '../utils/db';
+import { scrapeUrls, getSocialUrls } from '../utils/scraperApi';
 
 // TikTok icon (not in lucide)
 const TikTokIcon = () => (
@@ -43,6 +44,8 @@ function ProjectDetail({ onUpdate, onDelete }) {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('script');
     const [isSaving, setIsSaving] = useState(false);
+    const [isFetchingStats, setIsFetchingStats] = useState(false);
+    const [fetchError, setFetchError] = useState(null);
 
     useEffect(() => {
         loadProject();
@@ -313,6 +316,61 @@ function ProjectDetail({ onUpdate, onDelete }) {
                     {/* Video Stats */}
                     <div className="sidebar-section">
                         <h3 className="sidebar-section-title">Video Stats</h3>
+
+                        {/* Fetch Stats Button */}
+                        <button
+                            className="btn btn-primary"
+                            style={{ width: '100%', marginBottom: 'var(--space-md)' }}
+                            onClick={async () => {
+                                const urls = getSocialUrls(project.socialLinks);
+                                if (urls.length === 0) {
+                                    setFetchError('Add TikTok or Instagram links first');
+                                    return;
+                                }
+                                setIsFetchingStats(true);
+                                setFetchError(null);
+                                try {
+                                    const result = await scrapeUrls(urls);
+                                    if (result.success && result.summary) {
+                                        await handleUpdate({
+                                            stats: {
+                                                views: result.summary.total_views,
+                                                likes: result.summary.total_likes,
+                                                comments: result.summary.total_comments,
+                                            }
+                                        });
+                                    } else {
+                                        setFetchError(result.error || 'Failed to fetch stats');
+                                    }
+                                } catch (error) {
+                                    setFetchError(error.message);
+                                } finally {
+                                    setIsFetchingStats(false);
+                                }
+                            }}
+                            disabled={isFetchingStats}
+                        >
+                            {isFetchingStats ? (
+                                <><Loader2 className="animate-spin" style={{ width: 16, height: 16 }} /> Fetching...</>
+                            ) : (
+                                <><RefreshCw style={{ width: 16, height: 16 }} /> Fetch Stats</>
+                            )}
+                        </button>
+
+                        {fetchError && (
+                            <div style={{
+                                padding: 'var(--space-sm)',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#ef4444',
+                                fontSize: 'var(--font-size-xs)',
+                                marginBottom: 'var(--space-md)'
+                            }}>
+                                {fetchError}
+                            </div>
+                        )}
+
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
                             <div>
                                 <label style={{

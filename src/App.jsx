@@ -100,7 +100,7 @@ function App() {
             }
           />
           <Route path="/calendar" element={<Calendar projects={projects} />} />
-          <Route path="/statistics" element={<Statistics projects={projects} />} />
+          <Route path="/statistics" element={<Statistics projects={projects} onUpdateProject={handleUpdateProject} />} />
           <Route
             path="/settings"
             element={<Settings onRefresh={refreshProjects} />}

@@ -18,9 +18,29 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
+---
+
 ## 🚀 Utilisation
 
-### Méthode 1 : Ligne de commande
+### Option 1 : API pour l'application React (Recommandé)
+
+Lance l'API Flask pour permettre à l'application Video Manager de récupérer les stats automatiquement :
+
+```bash
+python api.py
+```
+
+L'API sera disponible sur `http://localhost:5000`
+
+#### Endpoints :
+- `GET /health` - Vérifier que l'API fonctionne
+- `POST /scrape` - Scraper une URL unique
+- `POST /scrape/batch` - Scraper plusieurs URLs
+
+---
+
+### Option 2 : Ligne de commande
+
 ```bash
 # Scraper une seule URL
 python scraper.py --url "https://www.tiktok.com/@user/video/123456"
@@ -30,9 +50,15 @@ python scraper.py --file input_urls.txt
 
 # Mode visible (non headless) pour debug
 python scraper.py --url "https://..." --visible
+
+# Export CSV en plus du JSON
+python scraper.py --file input_urls.txt --csv
 ```
 
-### Méthode 2 : Import Python
+---
+
+### Option 3 : Import Python
+
 ```python
 from scraper import SocialMediaScraper
 
@@ -40,6 +66,8 @@ scraper = SocialMediaScraper()
 stats = scraper.scrape_url("https://www.tiktok.com/@user/video/123")
 print(stats)
 ```
+
+---
 
 ## 📁 Format de sortie
 
@@ -61,12 +89,25 @@ print(stats)
 }
 ```
 
+---
+
+## 🔗 Intégration avec Video Manager
+
+1. **Lance l'API** : `python api.py`
+2. **Dans l'app** : Ouvre un projet et ajoute des URLs TikTok/Instagram
+3. **Clique sur "Fetch Stats"** : Les stats sont automatiquement récupérées
+4. **Page Statistics** : Utilise "Fetch All Stats" pour mettre à jour tous les projets
+
+---
+
 ## ⚠️ Limitations & Éthique
 
 - **Usage personnel uniquement** : Cet outil est destiné à extraire les stats de vos propres vidéos
 - **Rate limiting** : Délai de 3-5 secondes entre chaque requête
-- **Max 20 URLs** par session pour éviter les blocages
+- **Max 10 URLs** par batch pour éviter les blocages
 - **Données publiques** : Aucune connexion requise
+
+---
 
 ## 🔄 Mise à jour des sélecteurs
 
